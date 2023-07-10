@@ -129,8 +129,11 @@ async function AccountTable(props: AccountTable) {
                   </small>
                 </td>
                 <td
-                  className="text-end"
-                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                  className={'text-end'}
+                  style={{
+                    fontVariantNumeric: 'tabular-nums',
+                    paddingRight: row.amount < 0 ? '5em' : '',
+                  }}
                 >
                   {formatMoney(row.amount)}
                 </td>
@@ -180,5 +183,26 @@ function EventLink(props: EventLink) {
 }
 
 function formatMoney(baht: number) {
-  return baht.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })
+  let suffix = ''
+  let prefix = ''
+  let text = baht.toLocaleString('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+  })
+  text = text
+    .replace(/\.\d+/, (match) => {
+      suffix = match
+      return ''
+    })
+    .replace(/^-?฿/, (match) => {
+      prefix = match
+      return ''
+    })
+  return (
+    <>
+      {prefix}
+      {text}
+      <small>{suffix}</small>
+    </>
+  )
 }
