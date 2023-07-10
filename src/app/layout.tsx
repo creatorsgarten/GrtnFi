@@ -44,7 +44,7 @@ export default async function RootLayout({
           </div>
           <hr />
         </header>
-        {children}
+        <main className="container pb-4">{children}</main>
       </body>
     </html>
   )
