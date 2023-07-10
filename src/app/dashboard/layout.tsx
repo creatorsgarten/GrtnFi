@@ -1,5 +1,7 @@
 import { getSession } from '../api/auth/[...nextauth]/route'
 
+const allowedUsers = ['betich', 'chayapatr', 'dtinth', 'rayriffy']
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -7,7 +9,7 @@ export default async function DashboardLayout({
 }) {
   const session = await getSession()
 
-  if (!session || session.userId !== '644c35a6802c02345887f156') {
+  if (!session || !allowedUsers.includes(session.username || '')) {
     return <>No access.</>
   }
   return <>{children}</>

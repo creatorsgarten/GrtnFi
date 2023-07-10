@@ -30,7 +30,7 @@ export default async function RootLayout({
                   href="/api/auth/signout"
                   className="btn btn-sm btn-outline-secondary"
                 >
-                  Sign out [{session.user?.name}]
+                  Sign out [{session.username}]
                 </a>
               ) : (
                 <a

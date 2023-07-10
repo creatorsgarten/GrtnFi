@@ -50,9 +50,15 @@ const creatorsgartenProvider = {
   },
 } satisfies OAuthConfig<AuthgartenOidcClaims>
 
+declare module 'next-auth/jwt' {
+  export interface JWT {
+    username?: string
+  }
+}
 declare module 'next-auth' {
   export interface Session {
     userId?: string
+    username?: string
   }
 }
 
@@ -62,8 +68,17 @@ export const authOptions: NextAuthOptions = {
   // https://next-auth.js.org/configuration/providers/oauth
   providers: [creatorsgartenProvider],
   callbacks: {
+    async jwt({ token, profile }) {
+      if (profile) {
+        token.username = (
+          profile as AuthgartenOidcClaims
+        ).connections.github?.username
+      }
+      return token
+    },
     async session({ session, token }) {
       session.userId = token.sub
+      session.username = token.username
       return session
     },
   },
