@@ -48,6 +48,9 @@ async function getTransactions() {
       headers: {
         'xc-token': process.env.XC_TOKEN!,
       },
+      next: {
+        revalidate: 60,
+      },
     },
   )
   if (!response.ok) {
@@ -76,9 +79,11 @@ async function AccountTable(props: AccountTable) {
     .map((row) => ({
       id: row.Id,
       date: row.Date,
+      notes: row.Notes,
       description: row.Title,
       amount: isCashOnHand(row.Debit) ? row.Amount : -row.Amount,
-      account: isCashOnHand(row.Debit) ? row.Credit?.Title : row.Debit.Title,
+      account: isCashOnHand(row.Debit) ? row.Credit.Title : row.Debit.Title,
+      accountType: isCashOnHand(row.Debit) ? row.Credit.Type : row.Debit.Type,
       event: row.Event?.Title,
     }))
 
@@ -106,18 +111,35 @@ async function AccountTable(props: AccountTable) {
               <tr key={row.id}>
                 <td>
                   {row.date}
-                  <br />
-                  <small className="text-muted">{row.event}</small>
+                  {!!row.event && (
+                    <>
+                      <br />
+                      <small className="text-muted">
+                        <EventLink eventId={row.event} />
+                      </small>
+                    </>
+                  )}
                 </td>
                 <td>
-                  {row.description}
+                  <strong>{row.description}</strong> {row.notes}
                   <br />
                   <small className="text-muted">
-                    {row.amount < 0 ? <>&rarr;</> : <>&larr;</>} {row.account}
+                    {row.amount < 0 ? <>&rarr;</> : <>&larr;</>} {row.account}{' '}
+                    <AccountType type={row.accountType} />
                   </small>
                 </td>
-                <td className="text-end">{formatMoney(row.amount)}</td>
-                <td className="text-end">{formatMoney(balance)}</td>
+                <td
+                  className="text-end"
+                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {formatMoney(row.amount)}
+                </td>
+                <td
+                  className="text-end"
+                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {formatMoney(balance)}
+                </td>
               </tr>
             )
           })}
@@ -127,6 +149,33 @@ async function AccountTable(props: AccountTable) {
         {JSON.stringify(data, null, 2)}
       </pre> */}
     </>
+  )
+}
+
+interface AccountType {
+  type: string
+}
+function AccountType(props: AccountType) {
+  const colors =
+    {
+      Sponsor: 'bg-success-subtle text-success-emphasis',
+      Expense: 'bg-danger-subtle text-danger-emphasis',
+      Income: 'bg-info-subtle text-info-emphasis',
+    }[props.type] ?? 'text-bg-secondary'
+  return <span className={'badge ' + colors}>{props.type}</span>
+}
+
+interface EventLink {
+  eventId: string
+}
+function EventLink(props: EventLink) {
+  return (
+    <a
+      className="text-muted text-decoration-none"
+      href={`https://grtn.org/e/${props.eventId}`}
+    >
+      {props.eventId}
+    </a>
   )
 }
 
