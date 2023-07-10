@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+const NocoList = z.object({
+  list: z.array(z.unknown()),
+})
+
 export async function getAccountList() {
   const response = await fetch(
     `https://db.creatorsgarten.org/api/v1/db/data/v1/Creatorsgarten%20Operations/Accounts?${new URLSearchParams(
@@ -23,7 +27,7 @@ export async function getAccountList() {
     throw new Error(response.statusText)
   }
   const data = await response.json()
-  const parsed = RawAccountListData.parse(data)
+  const parsed = NocoList.parse(data)
   const list = parsed.list
     .map((item): AccountItem => {
       const row = RawAccountRow.parse(item)
@@ -40,9 +44,6 @@ export async function getAccountList() {
     })
   return { list }
 }
-const RawAccountListData = z.object({
-  list: z.array(z.unknown()),
-})
 const RawAccountRow = z.object({
   Id: z.number(),
   Title: z.string(),
@@ -56,6 +57,56 @@ interface AccountItem {
   type: string
   notes?: string | null
   balance: number
+}
+
+export async function getEventList() {
+  const response = await fetch(
+    `https://db.creatorsgarten.org/api/v1/db/data/v1/Creatorsgarten%20Operations/Events%20(External)?${new URLSearchParams(
+      {
+        limit: '1000',
+        shuffle: '0',
+        offset: '0',
+      },
+    )}`,
+    {
+      headers: {
+        'xc-token': process.env.XC_TOKEN!,
+      },
+      next: {
+        revalidate: 10,
+        tags: ['events'],
+      },
+    },
+  )
+  if (!response.ok) {
+    throw new Error(response.statusText)
+  }
+  const data = await response.json()
+  console.log(data)
+  const parsed = NocoList.parse(data)
+  const list = parsed.list
+    .map((item): EventItem => {
+      const row = RawEventRow.parse(item)
+      return {
+        id: row.Id,
+        slug: row.Slug,
+        transactionCount: row.TransactionCount,
+      }
+    })
+    .sort((a, b) => {
+      return a.slug.localeCompare(b.slug)
+    })
+  return { list }
+}
+const RawEventRow = z.object({
+  Id: z.number(),
+  Slug: z.string(),
+  TransactionCount: z.number(),
+})
+interface EventItem {
+  id: number
+  slug: string
+  transactionCount: number
 }
 
 async function getRawTransactions() {
@@ -103,7 +154,7 @@ const RawTransactionRow = z.object({
   Event: z
     .object({
       Id: z.number(),
-      Title: z.string(),
+      Slug: z.string(),
     })
     .nullish(),
   Debit: z.object({
@@ -135,7 +186,7 @@ export async function getEventTransactions(slug: string) {
   const data = await getRawTransactions()
   return toTable(
     data.list.filter((row) => {
-      return row.Event?.Title === slug
+      return row.Event?.Slug === slug
     }),
   )
 }
@@ -176,7 +227,7 @@ function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
       description: row.Title,
       amount: amount,
       balance: (balance += amount),
-      event: row.Event?.Title,
+      event: row.Event?.Slug,
       account,
       accountType,
     }

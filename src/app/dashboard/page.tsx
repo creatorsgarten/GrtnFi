@@ -1,16 +1,34 @@
-import {
-  getAccountList,
-  getAccountTransactions,
-  getEventTransactions,
-} from '@/db'
+import { getAccountList, getEventList } from '@/db'
 import Link from 'next/link'
 import { AccountType } from '../AccountType'
 import { formatMoney } from '@/utils/formatMoney'
 
 export default async function Dashboard() {
   const accountList = await getAccountList()
+  const eventList = await getEventList()
   return (
     <div>
+      <h1>Events</h1>
+      <ul className="nav nav-pills">
+        {eventList.list.map((event) => {
+          return (
+            <li key={event.id} className="nav-item">
+              <Link
+                href={`/dashboard/events/${event.slug}`}
+                className="nav-link"
+              >
+                {event.slug}{' '}
+                <span className="badge bg-secondary rounded-pill">
+                  {event.transactionCount}
+                </span>
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+      <br />
+      <br />
+
       <h1>Accounts</h1>
       <table className="table table-bordered">
         <thead>
