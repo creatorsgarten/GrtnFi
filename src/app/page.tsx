@@ -1,12 +1,14 @@
+import { getServerSession } from 'next-auth/next'
 import { z } from 'zod'
+import { authOptions } from './api/auth/[...nextauth]/route'
 
-export default function Home() {
+export default async function Home() {
   return (
-    <main className="container py-4">
-      GrtnFi
-      <hr />
+    <main className="container pb-4">
       <h1>showdown.space</h1>
       <AccountTable hostAccounts={['dtinth']} />
+      <br />
+      <br />
       <h1>sht7</h1>
       <EventTable eventSlug="sht7" />
     </main>
@@ -53,7 +55,8 @@ async function getTransactions() {
         'xc-token': process.env.XC_TOKEN!,
       },
       next: {
-        revalidate: 60,
+        revalidate: 10,
+        tags: ['transactions'],
       },
     },
   )
@@ -193,7 +196,15 @@ function TransactionTable(props: TransactionTable) {
                   )}
                 </td>
                 <td>
-                  <strong>{row.description}</strong> {row.notes}
+                  <strong>{row.description}</strong>{' '}
+                  {row.notes ? (
+                    <>
+                      <br />
+                      <span style={{ whiteSpace: 'pre-line' }}>
+                        {row.notes}
+                      </span>
+                    </>
+                  ) : null}
                   <br />
                   <small className="text-muted">
                     {row.amount < 0 ? <>&rarr;</> : <>&larr;</>} {row.account}{' '}

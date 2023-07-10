@@ -1,7 +1,9 @@
 import './globals.css'
 import 'bootstrap/dist/css/bootstrap.css'
 import type { Metadata } from 'next'
+import { getServerSession } from 'next-auth/next'
 import { Inter } from 'next/font/google'
+import { authOptions } from './api/auth/[...nextauth]/route'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -10,14 +12,41 @@ export const metadata: Metadata = {
   description: 'Creatorsgarten’s balance tracking system',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session = await getServerSession(authOptions)
+
   return (
     <html lang="en" data-bs-theme="light">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <header className="container pt-4 pb-3">
+          <div className="d-flex align-items-center">
+            <strong className="flex-none">GrtnFi</strong>
+            <span className="ms-auto">
+              {session?.userId ? (
+                <a
+                  href="/api/auth/signout"
+                  className="btn btn-sm btn-outline-secondary"
+                >
+                  Sign out [{session.user?.name}]
+                </a>
+              ) : (
+                <a
+                  href="/api/auth/signin"
+                  className="btn btn-sm btn-outline-secondary"
+                >
+                  Sign in
+                </a>
+              )}
+            </span>
+          </div>
+          <hr />
+        </header>
+        {children}
+      </body>
     </html>
   )
 }
