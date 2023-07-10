@@ -1,9 +1,8 @@
 import './globals.css'
 import 'bootstrap/dist/css/bootstrap.css'
 import type { Metadata } from 'next'
-import { getServerSession } from 'next-auth/next'
 import { Inter } from 'next/font/google'
-import { authOptions } from './api/auth/[...nextauth]/route'
+import { getSession } from './api/auth/[...nextauth]/route'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -17,7 +16,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
 
   return (
     <html lang="en" data-bs-theme="light">

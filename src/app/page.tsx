@@ -1,6 +1,4 @@
-import { getServerSession } from 'next-auth/next'
 import { z } from 'zod'
-import { authOptions } from './api/auth/[...nextauth]/route'
 
 export default async function Home() {
   return (

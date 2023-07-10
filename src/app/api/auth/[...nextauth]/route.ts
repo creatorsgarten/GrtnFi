@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions } from 'next-auth'
+import NextAuth, { NextAuthOptions, getServerSession } from 'next-auth'
 import type { OAuthConfig } from 'next-auth/providers'
 
 /**
@@ -72,3 +72,7 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
+
+export function getSession() {
+  return getServerSession(authOptions)
+}
