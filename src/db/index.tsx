@@ -82,7 +82,6 @@ export async function getEventList() {
     throw new Error(response.statusText)
   }
   const data = await response.json()
-  console.log(data)
   const parsed = NocoList.parse(data)
   const list = parsed.list
     .map((item): EventItem => {
@@ -109,7 +108,7 @@ interface EventItem {
   transactionCount: number
 }
 
-async function getRawTransactions() {
+export async function getRawTransactions() {
   const response = await fetch(
     `https://db.creatorsgarten.org/api/v1/db/data/v1/Creatorsgarten%20Operations/Transactions?${new URLSearchParams(
       {

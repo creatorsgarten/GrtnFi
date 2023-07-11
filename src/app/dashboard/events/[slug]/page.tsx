@@ -12,6 +12,8 @@ export default async function EventPage({
     <>
       <DashboaardBreadcrumb pageTitle={'Event: ' + params.slug} />
       <h1>{params.slug}</h1>
+
+      <h2 className="mt-5">Transactions</h2>
       <TransactionTable transactions={transactions} />
     </>
   )

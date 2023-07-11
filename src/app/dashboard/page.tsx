@@ -26,6 +26,7 @@ export default async function Dashboard() {
           )
         })}
       </ul>
+
       <br />
       <br />
 
@@ -63,6 +64,16 @@ export default async function Dashboard() {
           })}
         </tbody>
       </table>
+
+      <br />
+      <br />
+
+      <h1>Developer</h1>
+      <ul>
+        <li>
+          <Link href="/dashboard/dev/transactions">View raw transactions</Link>
+        </li>
+      </ul>
     </div>
   )
 }
