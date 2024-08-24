@@ -1,6 +1,6 @@
 import { TransactionTableRow } from '@/db'
-import { AccountType } from './AccountType'
 import { formatMoney } from '@/utils/formatMoney'
+import { AccountType } from './AccountType'
 
 export interface TransactionTable {
   transactions: TransactionTableRow[]
@@ -55,7 +55,11 @@ export function TransactionTable(props: TransactionTable) {
                 <td
                   className={
                     'text-end ' +
-                    (row.amount < 0 ? 'text-danger' : 'text-success')
+                    (row.selfCrediting
+                      ? 'text-primary'
+                      : row.amount < 0
+                      ? 'text-danger'
+                      : 'text-success')
                   }
                   style={{
                     fontVariantNumeric: 'tabular-nums',

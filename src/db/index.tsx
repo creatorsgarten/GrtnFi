@@ -83,20 +83,24 @@ export async function getRawTransactions() {
     accountList.list.map((account) => [account.id, account]),
   )
   const eventMap = new Map(eventList.list.map((event) => [event.id, event]))
-  const list = rows.map((row): RawTransactionRow => {
-    return {
-      Id: row.id,
-      Title: row.Title,
-      CreatedAt: '',
-      UpdatedAt: '',
-      Amount: row.Amount,
-      Date: new Date(row.Date * 1000).toISOString(),
-      Notes: row.Notes || null,
-      Event: eventMap.get(row.Event) || null,
-      Debit: accountMap.get(row.Debit)!,
-      Credit: accountMap.get(row.Credit)!,
-    }
-  })
+  const list = rows
+    .map((row): RawTransactionRow => {
+      return {
+        Id: row.id,
+        Title: row.Title,
+        CreatedAt: '',
+        UpdatedAt: '',
+        Amount: row.Amount,
+        Date: new Date(row.Date * 1000).toISOString().split('T')[0],
+        Notes: row.Notes || null,
+        Event: eventMap.get(row.Event) || null,
+        Debit: accountMap.get(row.Debit)!,
+        Credit: accountMap.get(row.Credit)!,
+      }
+    })
+    .sort((a, b) => {
+      return a.Date.localeCompare(b.Date) || a.Title.localeCompare(b.Title)
+    })
   return { list }
 }
 type RawTransactionRow = {
@@ -162,13 +166,15 @@ function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
         return use(row.Debit)
       }
     })()
+    const selfCrediting = row.Credit === row.Debit
     return {
       id: row.Id,
       date: row.Date,
       notes: row.Notes,
       description: row.Title,
       amount: amount,
-      balance: (balance += amount),
+      balance: (balance += selfCrediting ? 0 : amount),
+      selfCrediting,
       event: row.Event?.slug,
       account,
       accountType,
@@ -185,4 +191,5 @@ export interface TransactionTableRow {
   account: string
   accountType: string
   event?: string | null
+  selfCrediting: boolean
 }
