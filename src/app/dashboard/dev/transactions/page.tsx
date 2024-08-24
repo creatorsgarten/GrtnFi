@@ -1,6 +1,5 @@
-import { TransactionTable } from '@/app/TransactionTable'
-import { getRawTransactions } from '@/db'
 import { DashboaardBreadcrumb } from '@/app/dashboard/DashboaardBreadcrumb'
+import { getRawTransactions } from '@/db'
 
 export default async function EventPage({
   params,

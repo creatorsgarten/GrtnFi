@@ -1,4 +1,4 @@
-import { getSession } from '../api/auth/[...nextauth]/route'
+import { getSession } from '../api/auth/[...nextauth]/auth'
 import { isUserAllowed } from './allowedUsers'
 
 export default async function DashboardLayout({
