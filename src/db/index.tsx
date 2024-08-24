@@ -90,7 +90,7 @@ export async function getRawTransactions() {
       CreatedAt: '',
       UpdatedAt: '',
       Amount: row.Amount,
-      Date: new Date(row.Date).toISOString(),
+      Date: new Date(row.Date * 1000).toISOString(),
       Notes: row.Notes || null,
       Event: eventMap.get(row.Event) || null,
       Debit: accountMap.get(row.Debit)!,
