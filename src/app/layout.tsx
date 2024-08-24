@@ -1,9 +1,9 @@
-import './globals.css'
 import 'bootstrap/dist/css/bootstrap.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { getSession } from './api/auth/[...nextauth]/route'
 import Link from 'next/link'
+import { getSession } from './api/auth/[...nextauth]/auth'
+import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
