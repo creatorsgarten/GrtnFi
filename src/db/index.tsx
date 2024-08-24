@@ -125,6 +125,7 @@ export async function getAccountTransactions(hostAccounts: number[]) {
     data.list.filter((row) => {
       return isHostAccount(row.Debit) || isHostAccount(row.Credit)
     }),
+    { mode: 'account' },
   )
 }
 
@@ -134,10 +135,16 @@ export async function getEventTransactions(slug: string) {
     data.list.filter((row) => {
       return row.Event?.slug === slug
     }),
+    { mode: 'event' },
   )
 }
 
-function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
+function toTable(
+  list: RawTransactionRow[],
+  options: {
+    mode: 'event' | 'account'
+  },
+): TransactionTableRow[] {
   const isCashOnHand = (account: Account) => {
     return account.type === 'Cash on Hand'
   }
@@ -173,7 +180,8 @@ function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
       notes: row.Notes,
       description: row.Title,
       amount: amount,
-      balance: (balance += selfCrediting ? 0 : amount),
+      balance: (balance +=
+        selfCrediting && options.mode === 'account' ? 0 : amount),
       selfCrediting,
       event: row.Event?.slug,
       account,
