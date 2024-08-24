@@ -1,7 +1,15 @@
+import { createCache } from 'async-cache-dedupe'
 import { GristDocAPI } from 'grist-api'
 
 const docUrl = process.env.GRIST_DOC_URL!
 const grist = new GristDocAPI(docUrl)
+
+const cache = createCache({ ttl: 5 }).define(
+  'fetchGristTable',
+  async (tableName: string) => {
+    return grist.fetchTable(tableName)
+  },
+)
 
 interface Account {
   id: number
@@ -11,7 +19,7 @@ interface Account {
   balance: number
 }
 export async function getAccountList() {
-  const accounts = (await grist.fetchTable('Accounts')) as {
+  const accounts = (await cache.fetchGristTable('Accounts')) as {
     id: number
     Notes: string
     Balance: number
@@ -41,7 +49,7 @@ interface Event {
   transactionCount: number
 }
 export async function getEventList() {
-  const rows = (await grist.fetchTable('Events')) as {
+  const rows = (await cache.fetchGristTable('Events')) as {
     id: number
     Slug: string
     TransactionCount: number
@@ -65,7 +73,7 @@ export async function getRawTransactions() {
   const [accountList, eventList, rows] = await Promise.all([
     getAccountList(),
     getEventList(),
-    grist.fetchTable('Transactions') as Promise<
+    cache.fetchGristTable('Transactions') as Promise<
       {
         id: number
         Amount: number
