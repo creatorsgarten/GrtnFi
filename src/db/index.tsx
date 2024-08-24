@@ -1,178 +1,121 @@
-import { z } from 'zod'
+import { GristDocAPI } from 'grist-api'
 
-const NocoList = z.object({
-  list: z.array(z.unknown()),
-})
+const docUrl = process.env.GRIST_DOC_URL!
+const grist = new GristDocAPI(docUrl)
 
-export async function getAccountList() {
-  const response = await fetch(
-    `https://db.creatorsgarten.org/api/v1/db/data/v1/Creatorsgarten%20Operations/Accounts?${new URLSearchParams(
-      {
-        limit: '1000',
-        shuffle: '0',
-        offset: '0',
-      },
-    )}`,
-    {
-      headers: {
-        'xc-token': process.env.XC_TOKEN!,
-      },
-      next: {
-        revalidate: 10,
-        tags: ['accounts'],
-      },
-    },
-  )
-  if (!response.ok) {
-    throw new Error(response.statusText)
-  }
-  const data = await response.json()
-  const parsed = NocoList.parse(data)
-  const list = parsed.list
-    .map((item): AccountItem => {
-      const row = RawAccountRow.parse(item)
-      return {
-        id: row.Id,
-        title: row.Title,
-        type: row.Type,
-        notes: row.Notes,
-        balance: row.Balance,
-      }
-    })
-    .sort((a, b) => {
-      return a.type.localeCompare(b.type) || a.title.localeCompare(b.title)
-    })
-  return { list }
-}
-const RawAccountRow = z.object({
-  Id: z.number(),
-  Title: z.string(),
-  Type: z.string(),
-  Notes: z.string().nullish(),
-  Balance: z.number(),
-})
-interface AccountItem {
+interface Account {
   id: number
   title: string
   type: string
-  notes?: string | null
+  notes: string
   balance: number
 }
-
-export async function getEventList() {
-  const response = await fetch(
-    `https://db.creatorsgarten.org/api/v1/db/data/v1/Creatorsgarten%20Operations/Events%20(External)?${new URLSearchParams(
-      {
-        limit: '1000',
-        shuffle: '0',
-        offset: '0',
-      },
-    )}`,
-    {
-      headers: {
-        'xc-token': process.env.XC_TOKEN!,
-      },
-      next: {
-        revalidate: 10,
-        tags: ['events'],
-      },
-    },
-  )
-  if (!response.ok) {
-    throw new Error(response.statusText)
+export async function getAccountList() {
+  const accounts = (await grist.fetchTable('Accounts')) as {
+    id: number
+    Notes: string
+    Balance: number
+    Title: string
+    Type: string
+  }[]
+  return {
+    list: accounts
+      .map((account): Account => {
+        return {
+          id: account.id,
+          title: account.Title,
+          type: account.Type,
+          notes: account.Notes,
+          balance: account.Balance,
+        }
+      })
+      .sort((a, b) => {
+        return a.type.localeCompare(b.type) || a.title.localeCompare(b.title)
+      }),
   }
-  const data = await response.json()
-  const parsed = NocoList.parse(data)
-  const list = parsed.list
-    .map((item): EventItem => {
-      const row = RawEventRow.parse(item)
-      return {
-        id: row.Id,
-        slug: row.Slug,
-        transactionCount: row.TransactionCount,
-      }
-    })
-    .sort((a, b) => {
-      return a.slug.localeCompare(b.slug)
-    })
-  return { list }
 }
-const RawEventRow = z.object({
-  Id: z.number(),
-  Slug: z.string(),
-  TransactionCount: z.number(),
-})
-interface EventItem {
+
+interface Event {
   id: number
   slug: string
   transactionCount: number
 }
+export async function getEventList() {
+  const rows = (await grist.fetchTable('Events')) as {
+    id: number
+    Slug: string
+    TransactionCount: number
+  }[]
+  return {
+    list: rows
+      .map((row): Event => {
+        return {
+          id: row.id,
+          slug: row.Slug,
+          transactionCount: row.TransactionCount,
+        }
+      })
+      .sort((a, b) => {
+        return a.slug.localeCompare(b.slug)
+      }),
+  }
+}
 
 export async function getRawTransactions() {
-  const response = await fetch(
-    `https://db.creatorsgarten.org/api/v1/db/data/v1/Creatorsgarten%20Operations/Transactions?${new URLSearchParams(
+  const [accountList, eventList, rows] = await Promise.all([
+    getAccountList(),
+    getEventList(),
+    grist.fetchTable('Transactions') as Promise<
       {
-        limit: '1000',
-        shuffle: '0',
-        offset: '0',
-        'nested[Debit][fields]': 'Id,Title,Type',
-        'nested[Credit][fields]': 'Id,Title,Type',
-      },
-    )}`,
-    {
-      headers: {
-        'xc-token': process.env.XC_TOKEN!,
-      },
-      next: {
-        revalidate: 10,
-        tags: ['transactions'],
-      },
-    },
+        id: number
+        Amount: number
+        Credit: number
+        Date: number
+        Debit: number
+        Event: number
+        Notes: string
+        PrivateNotes: string
+        Title: string
+      }[]
+    >,
+  ])
+  const accountMap = new Map(
+    accountList.list.map((account) => [account.id, account]),
   )
-  if (!response.ok) {
-    throw new Error(response.statusText)
-  }
-  const data = await response.json()
-  const { list } = RawTransactionData.parse(data)
-  const parsed = list.map((row) => {
-    return RawTransactionRow.parse(row)
+  const eventMap = new Map(eventList.list.map((event) => [event.id, event]))
+  const list = rows.map((row): RawTransactionRow => {
+    return {
+      Id: row.id,
+      Title: row.Title,
+      CreatedAt: '',
+      UpdatedAt: '',
+      Amount: row.Amount,
+      Date: new Date(row.Date).toISOString(),
+      Notes: row.Notes || null,
+      Event: eventMap.get(row.Event) || null,
+      Debit: accountMap.get(row.Debit)!,
+      Credit: accountMap.get(row.Credit)!,
+    }
   })
-  return { list: parsed }
+  return { list }
 }
-const RawTransactionData = z.object({
-  list: z.array(z.unknown()),
-})
-const RawTransactionRow = z.object({
-  Id: z.number(),
-  Title: z.string(),
-  CreatedAt: z.string(),
-  UpdatedAt: z.string(),
-  Amount: z.number(),
-  Date: z.string(),
-  Notes: z.string().nullish(),
-  Event: z
-    .object({
-      Id: z.number(),
-      Slug: z.string(),
-    })
-    .nullish(),
-  Debit: z.object({
-    Id: z.number(),
-    Title: z.string(),
-    Type: z.string(),
-  }),
-  Credit: z.object({
-    Id: z.number(),
-    Title: z.string(),
-    Type: z.string(),
-  }),
-})
-type RawTransactionRow = z.infer<typeof RawTransactionRow>
+type RawTransactionRow = {
+  Id: number
+  Title: string
+  CreatedAt: string
+  UpdatedAt: string
+  Amount: number
+  Date: string
+  Notes: string | null
+  Event: Event | null
+  Debit: Account
+  Credit: Account
+}
 
 export async function getAccountTransactions(hostAccounts: number[]) {
   const data = await getRawTransactions()
-  const isHostAccount = (account: { Id: number }) => {
-    return hostAccounts.includes(account.Id)
+  const isHostAccount = (account: { id: number }) => {
+    return hostAccounts.includes(account.id)
   }
   return toTable(
     data.list.filter((row) => {
@@ -185,17 +128,17 @@ export async function getEventTransactions(slug: string) {
   const data = await getRawTransactions()
   return toTable(
     data.list.filter((row) => {
-      return row.Event?.Slug === slug
+      return row.Event?.slug === slug
     }),
   )
 }
 
 function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
-  const isCashOnHand = (account: { Type: string }) => {
-    return account.Type === 'Cash on Hand'
+  const isCashOnHand = (account: Account) => {
+    return account.type === 'Cash on Hand'
   }
-  const isReceivable = (account: { Type: string }) => {
-    return account.Type === 'Receivables'
+  const isReceivable = (account: Account) => {
+    return account.type === 'Receivables'
   }
   let balance = 0
   return list.map((row) => {
@@ -207,10 +150,10 @@ function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
     const received = isCashOnHand(row.Debit)
     const receiving = isReceivable(row.Debit)
     const { account, accountType } = (() => {
-      const use = (a: { Title: string; Type: string }) => {
+      const use = (a: Account) => {
         return {
-          account: a.Title,
-          accountType: a.Type,
+          account: a.title,
+          accountType: a.type,
         }
       }
       if (received || receiving) {
@@ -226,7 +169,7 @@ function toTable(list: RawTransactionRow[]): TransactionTableRow[] {
       description: row.Title,
       amount: amount,
       balance: (balance += amount),
-      event: row.Event?.Slug,
+      event: row.Event?.slug,
       account,
       accountType,
     }
